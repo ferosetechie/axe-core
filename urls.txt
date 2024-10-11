@@ -1,0 +1,3 @@
+https://www.website-to-test.com/
+https://www.website-to-test.com/subpage/
+https://www.website-to-test.com/another-subpage/

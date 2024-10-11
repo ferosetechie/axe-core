@@ -11,11 +11,16 @@
     "prepare": "husky install"
   },
   "devDependencies": {
+    "axe-core": "^4.10.0",
     "conventional-changelog-cli": "^5.0.0",
     "copyfiles": "^2.4.1",
     "del-cli": "^5.1.0",
     "husky": "^9.0.11",
     "standard-version": "^9.5.0",
     "xml-js": "^1.6.11"
+  },
+  "dependencies": {
+    "axe-webdriverjs": "^2.3.0",
+    "selenium-webdriver": "^4.25.0"
   }
 }

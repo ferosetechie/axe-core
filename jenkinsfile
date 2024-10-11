@@ -1,0 +1,51 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                // Checkout the code from your repository
+                git 'hhttps://github.com/ferosetechie/axe-core.git' // Replace with your repo URL
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                // Install Node.js dependencies
+                script {
+                    sh 'npm install'
+                }
+            }
+        }
+
+        stage('Run Accessibility Tests') {
+            steps {
+                script {
+                    // Run the accessibility test script
+                    def results = sh(script: 'node run-accessibility-tests.js', returnStdout: true).trim()
+                    echo "Accessibility Test Results:\n${results}"
+
+                    // Check for any output indicating failures or issues
+                    if (results.contains("error") || results.contains("fail")) {
+                        currentBuild.result = 'UNSTABLE'
+                        error("Accessibility tests encountered issues!")
+                    } else {
+                        echo "Accessibility tests passed successfully."
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Accessibility tests completed successfully!'
+        }
+        unstable {
+            echo 'Accessibility tests completed with issues.'
+        }
+        failure {
+            echo 'Accessibility tests failed!'
+        }
+    }
+}
