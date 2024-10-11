@@ -3,12 +3,11 @@ const chrome = require('selenium-webdriver/chrome');
 const AxeBuilder = require('axe-webdriverjs');
 
 async function runAccessibilityTests() {
-    // Set Chrome options
     let options = new chrome.Options();
-    options.addArguments('--headless'); // Run in headless mode
+    options.addArguments('--headless');
     options.addArguments('--no-sandbox');
     options.addArguments('--disable-dev-shm-usage');
-    options.addArguments('--disable-gpu'); // Optional but can help in some environments
+    options.addArguments('--disable-gpu');
 
     let driver = await new Builder()
         .forBrowser('chrome')
@@ -27,9 +26,16 @@ async function runAccessibilityTests() {
         for (let frame of frames) {
             await driver.switchTo().frame(frame); // Switch to the iframe
 
+            // Optional: Configure axe for cross-origin iframes
+            await driver.executeScript(`
+                axe.configure({
+                    allowedOrigins: ['<same_origin>', 'https://your-iframe-url.com']
+                });
+            `);
+
             // Run Axe accessibility checks
             const results = await AxeBuilder(driver).analyze();
-            console.log(`Accessibility results for frame: ${results}`);
+            console.log(`Accessibility results for frame: ${JSON.stringify(results, null, 2)}`);
 
             await driver.switchTo().defaultContent(); // Switch back to main content
         }
