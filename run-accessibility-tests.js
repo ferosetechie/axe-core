@@ -17,28 +17,19 @@ async function runAccessibilityTests() {
     try {
         await driver.get('https://www.deque.com/'); // Replace with your target URL
 
-        // Wait for iframes to be present
-        await driver.wait(until.elementsLocated(By.tagName('iframe')), 10000);
+        // Inject axe-core into the page
+        await driver.executeScript(`
+            var script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.0.2/axe.min.js'; // Use the correct version
+            document.head.appendChild(script);
+        `);
 
-        // Get all iframes
-        const frames = await driver.findElements(By.tagName('iframe'));
+        // Wait for axe-core to load
+        await driver.sleep(2000); // Adjust as needed
 
-        for (let frame of frames) {
-            await driver.switchTo().frame(frame); // Switch to the iframe
-
-            // Optional: Configure axe for cross-origin iframes
-            await driver.executeScript(`
-                axe.configure({
-                    allowedOrigins: ['<same_origin>', 'https://your-iframe-url.com']
-                });
-            `);
-
-            // Run Axe accessibility checks
-            const results = await AxeBuilder(driver).analyze();
-            console.log(`Accessibility results for frame: ${JSON.stringify(results, null, 2)}`);
-
-            await driver.switchTo().defaultContent(); // Switch back to main content
-        }
+        // Run Axe accessibility checks
+        const results = await AxeBuilder(driver).analyze();
+        console.log(JSON.stringify(results, null, 2));
     } catch (error) {
         console.error("Error running accessibility tests:", error);
     } finally {
