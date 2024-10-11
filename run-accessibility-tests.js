@@ -1,4 +1,4 @@
-const { Builder } = require('selenium-webdriver');
+const { Builder, By, until } = require('selenium-webdriver');
 const chrome = require('selenium-webdriver/chrome');
 const AxeBuilder = require('axe-webdriverjs');
 
@@ -9,7 +9,6 @@ async function runAccessibilityTests() {
     options.addArguments('--no-sandbox');
     options.addArguments('--disable-dev-shm-usage');
     options.addArguments('--disable-gpu'); // Optional but can help in some environments
-    options.addArguments('--remote-debugging-port=9222'); // Optional for debugging
 
     let driver = await new Builder()
         .forBrowser('chrome')
@@ -19,14 +18,21 @@ async function runAccessibilityTests() {
     try {
         await driver.get('https://www.deque.com/'); // Replace with your target URL
 
-        // Wait for iframes to load if necessary
-        await driver.sleep(2000); // Adjust the sleep time as needed
+        // Wait for iframes to be present
+        await driver.wait(until.elementsLocated(By.tagName('iframe')), 10000);
 
-        // Run Axe accessibility checks
-        const results = await AxeBuilder(driver).analyze();
+        // Get all iframes
+        const frames = await driver.findElements(By.tagName('iframe'));
 
-        // Output results to console or save to a file
-        console.log(JSON.stringify(results, null, 2));
+        for (let frame of frames) {
+            await driver.switchTo().frame(frame); // Switch to the iframe
+
+            // Run Axe accessibility checks
+            const results = await AxeBuilder(driver).analyze();
+            console.log(`Accessibility results for frame: ${results}`);
+
+            await driver.switchTo().defaultContent(); // Switch back to main content
+        }
     } catch (error) {
         console.error("Error running accessibility tests:", error);
     } finally {
