@@ -1,8 +1,9 @@
-const { Builder, By, until } = require('selenium-webdriver');
+const { Builder, By } = require('selenium-webdriver');
 const chrome = require('selenium-webdriver/chrome');
 const AxeBuilder = require('axe-webdriverjs');
+const fs = require('fs');
 
-async function runAccessibilityTests() {
+async function runAccessibilityTests(targetUrl) {
     let options = new chrome.Options();
     options.addArguments('--headless');
     options.addArguments('--no-sandbox');
@@ -15,12 +16,12 @@ async function runAccessibilityTests() {
         .build();
 
     try {
-        await driver.get('https://www.deque.com/'); // Replace with your target URL
+        await driver.get(targetUrl); // Use the parameterized URL
 
         // Inject axe-core into the page
         await driver.executeScript(`
             var script = document.createElement('script');
-            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.0.2/axe.min.js'; // Use the correct version
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.0.2/axe.min.js';
             document.head.appendChild(script);
         `);
 
@@ -29,7 +30,11 @@ async function runAccessibilityTests() {
 
         // Run Axe accessibility checks
         const results = await AxeBuilder(driver).analyze();
-        console.log(JSON.stringify(results, null, 2));
+
+        // Output results to a JSON file
+        fs.writeFileSync('accessibility-results.json', JSON.stringify(results, null, 2));
+        console.log("Accessibility results saved to accessibility-results.json");
+
     } catch (error) {
         console.error("Error running accessibility tests:", error);
     } finally {
@@ -37,4 +42,6 @@ async function runAccessibilityTests() {
     }
 }
 
-runAccessibilityTests();
+// Get URL from command line arguments
+const targetUrl = process.argv[2];
+runAccessibilityTests(targetUrl);
