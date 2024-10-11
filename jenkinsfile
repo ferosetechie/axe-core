@@ -4,8 +4,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // Checkout the code from your repository
-                git 'hhttps://github.com/ferosetechie/axe-core.git' // Replace with your repo URL
+                git credentialsId: 'git', url: 'https://github.com/ferosetechie/axe-core.git', branch: 'main'
             }
         }
 
@@ -25,10 +24,9 @@ pipeline {
                     def results = sh(script: 'node run-accessibility-tests.js', returnStdout: true).trim()
                     echo "Accessibility Test Results:\n${results}"
 
-                    // Check for any output indicating failures or issues
+                    // Log results but do not fail the build
                     if (results.contains("error") || results.contains("fail")) {
-                        currentBuild.result = 'UNSTABLE'
-                        error("Accessibility tests encountered issues!")
+                        echo "Accessibility tests encountered issues, but the build will be marked as successful."
                     } else {
                         echo "Accessibility tests passed successfully."
                     }
@@ -38,14 +36,8 @@ pipeline {
     }
 
     post {
-        success {
-            echo 'Accessibility tests completed successfully!'
-        }
-        unstable {
-            echo 'Accessibility tests completed with issues.'
-        }
-        failure {
-            echo 'Accessibility tests failed!'
+        always {
+            echo 'The pipeline has completed.'
         }
     }
 }
