@@ -2,7 +2,10 @@
   "name": "axe-core-maven-html",
   "version": "4.10.0",
   "license": "ISC",
-  "repository": "dequelabs/axe-core-maven-html",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dequelabs/axe-core-maven-html.git"
+  },
   "scripts": {
     "docs:clean": "del 'dist-docs'",
     "docs:copy": "copyfiles -u 1 'docs/assets/*' 'docs/nav.json' 'dist-docs'",
@@ -20,7 +23,18 @@
     "xml-js": "^1.6.11"
   },
   "dependencies": {
+    "@axe-core/webdriverjs": "^4.10.1",
     "axe-webdriverjs": "^2.3.0",
-    "selenium-webdriver": "^4.25.0"
-  }
+    "chromedriver": "^132.0.2",
+    "fs": "^0.0.1-security",
+    "selenium-webdriver": "^4.28.1"
+  },
+  "description": "[![Join our Slack chat](https://img.shields.io/badge/slack-chat-purple.svg?logo=slack)](https://accessibility.deque.com/axe-community)",
+  "main": "run-accessibility-tests.js",
+  "keywords": [],
+  "author": "",
+  "bugs": {
+    "url": "https://github.com/dequelabs/axe-core-maven-html/issues"
+  },
+  "homepage": "https://github.com/dequelabs/axe-core-maven-html#readme"
 }

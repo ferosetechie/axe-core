@@ -5,6 +5,10 @@ pipeline {
         string(name: 'TARGET_URL', defaultValue: 'https://www.deque.com/', description: 'The URL to check for accessibility.')
     }
 
+    environment {
+        CHROME_BIN = "/usr/bin/google-chrome" // Ensure Chrome is installed
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -14,32 +18,23 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                // Install Node.js dependencies
                 script {
                     sh 'npm install'
                 }
             }
         }
 
-        stage('Run Accessibility Tests') {
+        stage('Run Functional & Accessibility Tests') {
             steps {
                 script {
-                    // Run the accessibility test script and export results to a file
                     sh "node run-accessibility-tests.js ${params.TARGET_URL}"
-                    
-                    // Archive the results file
-                    archiveArtifacts artifacts: 'accessibility-results.json', allowEmptyArchive: true
-                    
-                    // Read and echo results for logging purposes
-                    def results = readFile('accessibility-results.json')
-                    echo "Accessibility Test Results:\n${results}"
 
-                    // generating the accessibility results to a zip
-                    
-		    sh "zip accessibility-results.zip accessibility-results.json"
- 
-                    // Archive the compressed results file
-                    archiveArtifacts artifacts: 'accessibility-results.zip',allowEmptyArchive: true                   
+                    // Archive Accessibility Results
+                    archiveArtifacts artifacts: 'accessibility-results.json', allowEmptyArchive: true
+
+                    // Compress results
+                    sh "zip accessibility-results.zip accessibility-results.json"
+                    archiveArtifacts artifacts: 'accessibility-results.zip', allowEmptyArchive: true
                 }
             }
         }
@@ -47,7 +42,7 @@ pipeline {
 
     post {
         always {
-            echo 'The pipeline has completed.'
+            echo '✅ The pipeline has completed.'
         }
     }
 }
