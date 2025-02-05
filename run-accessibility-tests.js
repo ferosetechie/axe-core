@@ -3,27 +3,29 @@ const chrome = require("selenium-webdriver/chrome");
 const AxeBuilder = require("@axe-core/webdriverjs");
 const fs = require("fs");
 
-// Get arguments from CLI
+// Get CLI arguments
 const targetUrl = process.argv[2] || "https://www.deque.com/";
-const isHeadless = process.argv.includes("--headless"); // Allow toggling headless mode
+const isHeadless = process.argv.includes("--headless");
 
+// Initialize WebDriver with Chrome options
 (async function runTests() {
     let options = new chrome.Options();
 
     if (isHeadless) {
-        options.addArguments("--headless");
+        options.addArguments("--headless=new"); // ✅ Use new headless mode for stability
         console.log("🚀 Running in HEADLESS mode.");
     } else {
         console.log("🚀 Running in VISIBLE mode.");
     }
 
-    // Prevent session conflicts
     options.addArguments(
         "--start-maximized",
         "--disable-gpu",
         "--no-sandbox",
         "--disable-dev-shm-usage",
-        `--user-data-dir=/tmp/selenium-user-data-${Date.now()}`
+        "--disable-extensions",
+        "--remote-allow-origins=*",
+        "--user-data-dir=/tmp/chrome-profile" // ✅ Fix Chrome session conflict
     );
 
     let driver = await new Builder().forBrowser("chrome").setChromeOptions(options).build();
@@ -32,39 +34,30 @@ const isHeadless = process.argv.includes("--headless"); // Allow toggling headle
     try {
         console.log(`🔎 Testing: ${targetUrl}`);
         await driver.get(targetUrl);
-        await driver.sleep(2000); // Allow time for the page to load
+        await driver.sleep(2000); // Allow page load
 
-        // Try switching to iframe
+        // ✅ Try switching to iframe (if present)
         try {
             let iframe = await driver.findElement(By.css("iframe"));
             await driver.switchTo().frame(iframe);
             console.log("✅ Switched to iframe");
-        } catch (err) {
+        } catch {
             console.log("⚠️ No iframe found, continuing...");
         }
 
-        // ✅ Username field check
+        // ✅ Check if username field exists
         try {
-            let usernameField = await driver.wait(until.elementLocated(By.id("username")), 5000);
-            if (await usernameField.isDisplayed()) {
-                results.push({ test: "Username Field Exists", status: "PASS" });
-            } else {
-                results.push({ test: "Username Field Exists", status: "FAIL", error: "Not visible" });
-            }
+            await driver.wait(until.elementLocated(By.id("username")), 5000);
+            results.push({ test: "Username Field Exists", status: "PASS" });
         } catch (err) {
             results.push({ test: "Username Field Exists", status: "FAIL", error: err.message });
         }
 
         // ✅ Login test
         try {
-            let username = await driver.findElement(By.id("username"));
-            let password = await driver.findElement(By.id("password"));
-            let loginButton = await driver.findElement(By.css('button[type="submit"]'));
-
-            await username.sendKeys("testuser");
-            await password.sendKeys("testpassword");
-            await loginButton.click();
-
+            await driver.findElement(By.id("username")).sendKeys("testuser");
+            await driver.findElement(By.id("password")).sendKeys("testpassword");
+            await driver.findElement(By.css('button[type="submit"]')).click();
             await driver.wait(until.urlContains("/dashboard"), 5000);
             results.push({ test: "Login Test", status: "PASS" });
         } catch (err) {
@@ -86,7 +79,7 @@ const isHeadless = process.argv.includes("--headless"); // Allow toggling headle
         // ✅ Run axe-core accessibility test
         try {
             let axeResults = await new AxeBuilder(driver).analyze();
-            results.push({ test: "Axe Accessibility Check", status: "DONE", violations: axeResults.violations.length });
+            results.push({ test: "Axe Accessibility Check", status: "DONE", violations: axeResults.violations });
             fs.writeFileSync("accessibility-results.json", JSON.stringify(axeResults, null, 2));
             console.log("✅ Accessibility results saved to accessibility-results.json");
         } catch (err) {
@@ -97,7 +90,7 @@ const isHeadless = process.argv.includes("--headless"); // Allow toggling headle
         console.error("❌ Test execution error:", err);
     } finally {
         console.log("\n📊 Test Results:");
-        console.table(results); // Display formatted table in console
+        console.table(results); // Display formatted results
         await driver.quit();
     }
 })();

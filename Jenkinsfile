@@ -6,7 +6,8 @@ pipeline {
     }
 
     environment {
-        CHROME_BIN = "/usr/bin/google-chrome" // Ensure Chrome is installed
+        CHROME_BIN = "/usr/bin/google-chrome" // ✅ Ensure Chrome is installed
+        PATH = "/usr/local/bin:/usr/bin:/bin" // ✅ Ensure PATH is correct
     }
 
     stages {
@@ -27,14 +28,19 @@ pipeline {
         stage('Run Functional & Accessibility Tests') {
             steps {
                 script {
-                    sh "node run-accessibility-tests.js ${params.TARGET_URL}"
+                    try {
+                        sh "node run-accessibility-tests.js ${params.TARGET_URL}"
 
-                    // Archive Accessibility Results
-                    archiveArtifacts artifacts: 'accessibility-results.json', allowEmptyArchive: true
+                        // ✅ Archive Accessibility Results
+                        archiveArtifacts artifacts: 'accessibility-results.json', allowEmptyArchive: true
 
-                    // Compress results
-                    sh "zip accessibility-results.zip accessibility-results.json"
-                    archiveArtifacts artifacts: 'accessibility-results.zip', allowEmptyArchive: true
+                        // ✅ Compress results for easy download
+                        sh "zip accessibility-results.zip accessibility-results.json"
+                        archiveArtifacts artifacts: 'accessibility-results.zip', allowEmptyArchive: true
+                    } catch (Exception e) {
+                        echo "❌ Tests failed: ${e}"
+                        currentBuild.result = 'FAILURE'
+                    }
                 }
             }
         }
@@ -43,6 +49,9 @@ pipeline {
     post {
         always {
             echo '✅ The pipeline has completed.'
+        }
+        failure {
+            echo '❌ The pipeline failed. Check logs for details.'
         }
     }
 }
