@@ -9,7 +9,7 @@ const isHeadless = process.argv.includes("--headless"); // Allow toggling headle
 
 (async function runTests() {
     let options = new chrome.Options();
-    
+
     if (isHeadless) {
         options.addArguments("--headless");
         console.log("🚀 Running in HEADLESS mode.");
@@ -17,7 +17,14 @@ const isHeadless = process.argv.includes("--headless"); // Allow toggling headle
         console.log("🚀 Running in VISIBLE mode.");
     }
 
-    options.addArguments("--start-maximized", "--disable-gpu", "--no-sandbox", "--disable-dev-shm-usage");
+    // Prevent session conflicts
+    options.addArguments(
+        "--start-maximized",
+        "--disable-gpu",
+        "--no-sandbox",
+        "--disable-dev-shm-usage",
+        `--user-data-dir=/tmp/selenium-user-data-${Date.now()}`
+    );
 
     let driver = await new Builder().forBrowser("chrome").setChromeOptions(options).build();
     let results = [];
@@ -32,23 +39,32 @@ const isHeadless = process.argv.includes("--headless"); // Allow toggling headle
             let iframe = await driver.findElement(By.css("iframe"));
             await driver.switchTo().frame(iframe);
             console.log("✅ Switched to iframe");
-        } catch {
+        } catch (err) {
             console.log("⚠️ No iframe found, continuing...");
         }
 
         // ✅ Username field check
         try {
-            await driver.wait(until.elementLocated(By.id("username")), 5000);
-            results.push({ test: "Username Field Exists", status: "PASS" });
+            let usernameField = await driver.wait(until.elementLocated(By.id("username")), 5000);
+            if (await usernameField.isDisplayed()) {
+                results.push({ test: "Username Field Exists", status: "PASS" });
+            } else {
+                results.push({ test: "Username Field Exists", status: "FAIL", error: "Not visible" });
+            }
         } catch (err) {
             results.push({ test: "Username Field Exists", status: "FAIL", error: err.message });
         }
 
         // ✅ Login test
         try {
-            await driver.findElement(By.id("username")).sendKeys("testuser");
-            await driver.findElement(By.id("password")).sendKeys("testpassword");
-            await driver.findElement(By.css('button[type="submit"]')).click();
+            let username = await driver.findElement(By.id("username"));
+            let password = await driver.findElement(By.id("password"));
+            let loginButton = await driver.findElement(By.css('button[type="submit"]'));
+
+            await username.sendKeys("testuser");
+            await password.sendKeys("testpassword");
+            await loginButton.click();
+
             await driver.wait(until.urlContains("/dashboard"), 5000);
             results.push({ test: "Login Test", status: "PASS" });
         } catch (err) {
@@ -70,7 +86,7 @@ const isHeadless = process.argv.includes("--headless"); // Allow toggling headle
         // ✅ Run axe-core accessibility test
         try {
             let axeResults = await new AxeBuilder(driver).analyze();
-            results.push({ test: "Axe Accessibility Check", status: "DONE", violations: axeResults.violations });
+            results.push({ test: "Axe Accessibility Check", status: "DONE", violations: axeResults.violations.length });
             fs.writeFileSync("accessibility-results.json", JSON.stringify(axeResults, null, 2));
             console.log("✅ Accessibility results saved to accessibility-results.json");
         } catch (err) {
