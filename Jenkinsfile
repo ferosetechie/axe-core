@@ -6,8 +6,8 @@ pipeline {
     }
 
     environment {
-        CHROME_BIN = "/usr/bin/google-chrome" // ✅ Ensure Chrome is installed
-        PATH = "/usr/local/bin:/usr/bin:/bin" // ✅ Ensure PATH is correct
+        CHROME_BIN = "/usr/bin/google-chrome"
+        PATH = "/usr/local/bin:/usr/bin:/bin"
     }
 
     stages {
@@ -29,17 +29,18 @@ pipeline {
             steps {
                 script {
                     try {
-                        sh "node run-accessibility-tests.js ${params.TARGET_URL}"
+                        sh "node run-accessibility-tests.js ${params.TARGET_URL} --headless"
 
-                        // ✅ Archive Accessibility Results
+                        // Archive Accessibility Results
                         archiveArtifacts artifacts: 'accessibility-results.json', allowEmptyArchive: true
 
-                        // ✅ Compress results for easy download
-                        sh "zip accessibility-results.zip accessibility-results.json"
+                        // Compress results
+                        sh "zip -r accessibility-results.zip accessibility-results.json"
                         archiveArtifacts artifacts: 'accessibility-results.zip', allowEmptyArchive: true
                     } catch (Exception e) {
                         echo "❌ Tests failed: ${e}"
                         currentBuild.result = 'FAILURE'
+                        error("Stopping pipeline due to test failure.")
                     }
                 }
             }
